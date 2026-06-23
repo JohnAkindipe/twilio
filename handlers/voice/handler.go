@@ -3,6 +3,7 @@ package voice
 import (
 	"oba-twilio/metrics"
 	"oba-twilio/models"
+	"oba-twilio/privacy"
 	"oba-twilio/validation"
 
 	"github.com/gin-gonic/gin"
@@ -22,9 +23,10 @@ type Handler struct {
 	analyticsManager    middleware.AnalyticsManager
 	analyticsHashSalt   string
 	metrics             *metrics.Metrics
+	phoneHasher         *privacy.Hasher
 }
 
-func NewHandler(obaClient client.OneBusAwayClientInterface, locManager *localization.LocalizationManager) *Handler {
+func NewHandler(obaClient client.OneBusAwayClientInterface, locManager *localization.LocalizationManager, phoneHasher *privacy.Hasher) *Handler {
 	return &Handler{
 		OBAClient:           obaClient,
 		SessionStore:        common.NewSessionStore(),
@@ -35,6 +37,7 @@ func NewHandler(obaClient client.OneBusAwayClientInterface, locManager *localiza
 			MaxPredictedEarlyMins: 15,
 			FallbackToUnfiltered:  true,
 		},
+		phoneHasher: phoneHasher,
 	}
 }
 
@@ -44,9 +47,8 @@ func (h *Handler) Close() {
 	}
 }
 
-func (h *Handler) SetAnalytics(analyticsManager middleware.AnalyticsManager, hashSalt string) {
+func (h *Handler) SetAnalytics(analyticsManager middleware.AnalyticsManager) {
 	h.analyticsManager = analyticsManager
-	h.analyticsHashSalt = hashSalt
 }
 
 func (h *Handler) SetMetrics(m *metrics.Metrics) { h.metrics = m }
@@ -82,7 +84,8 @@ func (h *Handler) preprocessRequest(c *gin.Context) (*models.TwilioVoiceRequest,
 
 	// Track voice request
 	if h.analyticsManager != nil {
-		middleware.TrackVoiceRequest(c.Request.Context(), h.analyticsManager, req.From, language, h.analyticsHashSalt)
+		userID := h.phoneHasher.ConstructUserId(req.From)
+		middleware.TrackVoiceRequest(c.Request.Context(), h.analyticsManager, userID, language)
 	}
 
 	return &req, nil
