@@ -33,10 +33,12 @@ func (s sessionCategory) String() string {
 		return "voice"
 	case sms:
 		return "sms"
+	default:
+		return fmt.Sprintf("sessionCategory(%d)", int(s))
 	}
-	return "unknown"
 }
 
+// Note: A zero-valued sessionCategory is valid and corresponds to "disambiguation"
 const (
 	disambiguation sessionCategory = iota
 	voice
@@ -314,6 +316,8 @@ func (s *ImprovedSessionStore) setSession(phoneNumber string, data interface{}, 
 			ss.CreatedAt = now
 			ss.LastQueryTime = now
 		}
+	default:
+		return fmt.Errorf("unknown sessionCategory(%d)", int(sessionType))
 	}
 
 	// Store session and update LRU
@@ -482,6 +486,8 @@ func (s *ImprovedSessionStore) estimateMemoryUsage() int64 {
 			baseSize += 100 // voice sessions are small
 		case sms:
 			baseSize += 200 // SMS sessions with language strings
+		default:
+			baseSize += 150 // This is only a rough estimate for unknown session types
 		}
 	}
 
@@ -570,6 +576,8 @@ func (s *ImprovedSessionStore) ExpireSession(phoneNumber string) {
 			timeout = (SessionTimeoutMinutes + 1) * 60
 		case sms:
 			timeout = (smsSessionTimeoutMinutes + 1) * 60
+		default:
+			panic(fmt.Sprintf("unknown sessionCategory(%d)", int(entry.sessionType)))
 		}
 		entry.createdAt = time.Now().Unix() - timeout
 
