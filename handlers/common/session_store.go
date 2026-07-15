@@ -595,6 +595,8 @@ func (s *ImprovedSessionStore) ExpireSession(phoneNumber string) {
 			if ss, ok := entry.data.(*models.SMSSession); ok {
 				ss.CreatedAt = entry.createdAt
 			}
+		default:
+			panic(fmt.Sprintf("unknown sessionCategory(%d)", int(entry.sessionType)))
 		}
 
 		// Recalculate checksum with the new timestamp
