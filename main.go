@@ -102,7 +102,12 @@ func main() {
 		analyticsConfig = analytics.DefaultConfig()
 	}
 
-	phoneHasher := privacy.NewHasher(analyticsConfig.HashSalt, os.Getenv("PHONE_LOGS_SALT"))
+	phoneLogsSalt := os.Getenv("PHONE_LOGS_SALT")
+	if phoneLogsSalt == "" {
+		log.Printf("Warning: phone logs salt is empty, falling back to analytics salt")
+		phoneLogsSalt = analyticsConfig.HashSalt
+	}
+	phoneHasher := privacy.NewHasher(analyticsConfig.HashSalt, phoneLogsSalt)
 	// Create analytics manager
 	analyticsManager := analytics.NewManager(analyticsConfig)
 

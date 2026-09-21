@@ -18,7 +18,8 @@ func NewHasher(analyticsSalt, logSalt string) *Hasher {
 }
 
 // hashPhoneNumber creates a privacy-preserving hash of a phone number.
-// It uses SHA256 with a salt to prevent rainbow table attacks.
+// It uses SHA256 with a configured salt to prevent rainbow table attacks.
+// omitting the salt will return an unsalted hash.
 func hashPhoneNumber(phoneNumber string, salt string) string {
 	if phoneNumber == "" {
 		return ""
@@ -34,6 +35,7 @@ func (h *Hasher) ConstructUserId(phoneNumber string) string {
 }
 
 // HashForLogs returns a salted hash of the phone for safe log output.
+// If the log salt is omitted, an unsalted hash is returned.
 func (h *Hasher) HashForLogs(phoneNumber string) string {
 	return hashPhoneNumber(phoneNumber, h.logSalt)
 }
