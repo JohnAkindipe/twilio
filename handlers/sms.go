@@ -39,7 +39,6 @@ type SMSHandler struct {
 	ErrorHandler        *common.ErrorHandler
 	arrivalFilterConfig common.ArrivalFilterConfig
 	analyticsManager    middleware.AnalyticsManager
-	analyticsHashSalt   string
 	metrics             *metrics.Metrics
 	phoneHasher         *privacy.Hasher
 }
