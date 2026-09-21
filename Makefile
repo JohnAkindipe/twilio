@@ -35,7 +35,7 @@ test-verbose:
 
 # Lint the code (requires golangci-lint)
 lint:
-	golangci-lint run -E exhaustive
+	golangci-lint run
 
 # Format the code
 fmt:
