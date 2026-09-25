@@ -13,6 +13,8 @@ import (
 	"syscall"
 	"time"
 
+	"oba-twilio/privacy"
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
@@ -100,6 +102,12 @@ func main() {
 		analyticsConfig = analytics.DefaultConfig()
 	}
 
+	phoneLogsSalt := os.Getenv("PHONE_LOGS_SALT")
+	if phoneLogsSalt == "" {
+		log.Printf("Warning: phone logs salt is empty, falling back to analytics salt")
+		phoneLogsSalt = analyticsConfig.HashSalt
+	}
+	phoneHasher := privacy.NewHasher(analyticsConfig.HashSalt, phoneLogsSalt)
 	// Create analytics manager
 	analyticsManager := analytics.NewManager(analyticsConfig)
 
@@ -205,14 +213,14 @@ func main() {
 			coverage.CenterLat, coverage.CenterLon, coverage.Radius)
 	}
 
-	smsHandler := handlers.NewSMSHandler(obaClient, locManager)
-	voiceHandler := handlers.NewVoiceHandler(obaClient, locManager)
+	smsHandler := handlers.NewSMSHandler(obaClient, locManager, phoneHasher)
+	voiceHandler := handlers.NewVoiceHandler(obaClient, locManager, phoneHasher)
 	defer smsHandler.Close()
 	defer voiceHandler.Close()
 
 	// Pass analytics manager to handlers
-	handlers.SetAnalyticsManager(smsHandler, analyticsManager, analyticsConfig.HashSalt)
-	voiceHandler.SetAnalytics(analyticsManager, analyticsConfig.HashSalt)
+	handlers.SetAnalyticsManager(smsHandler, analyticsManager)
+	voiceHandler.SetAnalytics(analyticsManager)
 
 	arrivalFilterEnabled := parseEnvBool("ARRIVAL_FILTER_ENABLED", false)
 	arrivalFilterFallback := parseEnvBool("ARRIVAL_FILTER_FALLBACK_TO_UNFILTERED", true)
@@ -268,8 +276,8 @@ func main() {
 
 	// Add analytics middleware
 	r.Use(middleware.NewAnalyticsMiddleware(analyticsManager, middleware.AnalyticsConfig{
-		Enabled:  analyticsConfig.Enabled,
-		HashSalt: analyticsConfig.HashSalt,
+		Enabled:     analyticsConfig.Enabled,
+		PhoneHasher: phoneHasher,
 	}).Handler())
 
 	// Add Prometheus metrics middleware (public engine only)
