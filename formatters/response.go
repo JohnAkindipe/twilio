@@ -28,7 +28,7 @@ func FormatSMSResponse(arrivals []models.Arrival, stopName string, lm *localizat
 	}
 
 	if stopName != "" {
-		response.WriteString(fmt.Sprintf("%s: %s\n", stopLabel, stopName))
+		fmt.Fprintf(&response, "%s: %s\n", stopLabel, stopName)
 	}
 
 	for i, arrival := range arrivals {
@@ -257,10 +257,10 @@ func FormatDisambiguationMessage(stopOptions []models.StopOption, originalStopID
 	}
 
 	var response strings.Builder
-	response.WriteString(fmt.Sprintf("Multiple stops found for %s:\n", originalStopID))
+	fmt.Fprintf(&response, "Multiple stops found for %s:\n", originalStopID)
 
 	for i, option := range stopOptions {
-		response.WriteString(fmt.Sprintf("%d) %s\n", i+1, option.DisplayText))
+		fmt.Fprintf(&response, "%d) %s\n", i+1, option.DisplayText)
 	}
 
 	response.WriteString("Reply with the number to choose.")
